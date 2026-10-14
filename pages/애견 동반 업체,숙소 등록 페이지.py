@@ -1,3 +1,1 @@
-import streamlit as st
-st.title('천안 오성고등학교 화이팅')
-st.write('바이브코딩 재미있다!')
+streamlit run "pages/애견 동반 업체,숙소 등록 페이지.py"
