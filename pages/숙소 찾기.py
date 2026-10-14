@@ -1,6 +1,6 @@
 import streamlit as st
-st.title('가오리다람쥐')
-st.write('가오리 다람쥐 귀여워!')
+st.title('숙소 찾기')
+st.write('원하는 숙소를 찾아보세요!')
 import streamlit as st
 import pandas as pd
 import urllib.parse
