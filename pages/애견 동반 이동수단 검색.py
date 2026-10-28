@@ -3,146 +3,109 @@ import streamlit as st
 from urllib.parse import quote
 
 st.set_page_config(
-    page_title="함께가개 | 반려동물 동반 검색",
+    page_title="함께가개 | 반려동물 이동수단 검색",
     page_icon="🐾",
     layout="wide",
 )
 
-# -----------------------------------------------
-# 1. 예시 데이터
-# 실제 업체 정보가 아닌 UI 확인용 샘플입니다.
-# -----------------------------------------------
-ITEMS = [
+# 실제 업체 정보가 아닌 화면 확인용 예시 데이터
+TRANSPORTS = [
     {
-        "id": "place_01",
-        "name": "초록마루 애견카페",
-        "kind": "카페",
-        "region": "서울",
-        "address": "서울 지역 예시 주소",
-        "pets": ["강아지"],
-        "sizes": ["소형", "중형"],
-        "indoor": "실내 동반 조건 확인 필요",
-        "price": "메뉴별 상이",
-        "description": "반려견과 함께 쉬어 가는 카페 유형",
-        "tags": ["카페", "휴식", "실내"],
-        "image": "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=900",
-        "type": "장소",
-    },
-    {
-        "id": "place_02",
-        "name": "댕댕 테라스 식당",
-        "kind": "식당",
-        "region": "경기",
-        "address": "경기 지역 예시 주소",
-        "pets": ["강아지"],
-        "sizes": ["소형", "중형", "대형"],
-        "indoor": "야외 좌석 및 동반 규정 확인 필요",
-        "price": "메뉴별 상이",
-        "description": "반려견 동반 식사를 알아볼 때 참고할 유형",
-        "tags": ["식사", "테라스", "야외"],
-        "image": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=900",
-        "type": "장소",
-    },
-    {
-        "id": "place_03",
-        "name": "반려견 동반 숙소",
-        "kind": "숙소",
-        "region": "강원",
-        "address": "강원 지역 예시 주소",
-        "pets": ["강아지", "고양이"],
-        "sizes": ["소형", "중형", "대형"],
-        "indoor": "객실별 동반 가능 여부 확인 필요",
-        "price": "날짜 및 객실별 상이",
-        "description": "여행 전 반려동물 동반 숙소를 찾을 때 참고할 유형",
-        "tags": ["여행", "숙박", "예약"],
-        "image": "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=900",
-        "type": "장소",
-    },
-    {
-        "id": "place_04",
-        "name": "반려견 산책 공원",
-        "kind": "공원",
-        "region": "서울",
-        "address": "서울 지역 예시 주소",
-        "pets": ["강아지"],
-        "sizes": ["소형", "중형", "대형"],
-        "indoor": "야외 공간 · 목줄 등 현장 규정 확인",
-        "price": "무료 또는 시설별 상이",
-        "description": "산책과 야외 활동 장소를 찾을 때 참고할 유형",
-        "tags": ["산책", "야외", "공원"],
-        "image": "https://images.unsplash.com/photo-1511497584788-876760111969?w=900",
-        "type": "장소",
-    },
-    {
-        "id": "place_05",
-        "name": "반려동물 동반 캠핑장",
-        "kind": "캠핑",
-        "region": "충청",
-        "address": "충청 지역 예시 주소",
-        "pets": ["강아지"],
-        "sizes": ["소형", "중형", "대형"],
-        "indoor": "사이트별 규정 및 안전 수칙 확인 필요",
-        "price": "예약 날짜별 상이",
-        "description": "반려견과 야외에서 시간을 보내기 위한 캠핑 유형",
-        "tags": ["캠핑", "여행", "야외"],
-        "image": "https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?w=900",
-        "type": "장소",
-    },
-    {
-        "id": "move_01",
+        "id": "taxi",
         "name": "반려동물 동반 택시",
-        "kind": "택시",
+        "category": "택시",
         "region": "전국",
-        "address": "서비스 지역은 업체별 확인",
         "pets": ["강아지", "고양이"],
         "sizes": ["소형", "중형", "대형"],
-        "indoor": "예약 전 이동장 및 동반 조건 확인",
+        "condition": "예약 전 동반 가능 여부와 이동장 규정 확인",
         "price": "거리 및 업체별 상이",
-        "description": "반려동물과 목적지까지 이동하는 서비스 유형",
-        "tags": ["택시", "예약", "이동"],
+        "description": "반려동물과 목적지까지 이동할 때 알아볼 수 있는 서비스",
         "image": "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=900",
-        "type": "이동수단",
+        "tags": ["예약", "목적지 이동"],
     },
     {
-        "id": "move_02",
+        "id": "rental",
         "name": "반려동물 동반 렌터카",
-        "kind": "렌터카",
+        "category": "렌터카",
         "region": "전국",
-        "address": "대여 지점 및 이용 지역 확인",
         "pets": ["강아지", "고양이"],
         "sizes": ["소형", "중형", "대형"],
-        "indoor": "차량별 동반 정책 및 청소 비용 확인",
+        "condition": "차량별 동반 정책, 이동 안전 장비 및 청소 비용 확인",
         "price": "차량 및 날짜별 상이",
-        "description": "일정에 맞춰 이동할 수 있는 차량 대여 유형",
-        "tags": ["렌터카", "여행", "자유 이동"],
+        "description": "여행 일정에 맞춰 자유롭게 이동하고 싶을 때",
         "image": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=900",
-        "type": "이동수단",
+        "tags": ["여행", "자유 이동"],
     },
     {
-        "id": "move_03",
-        "name": "반려동물 대중교통 이용 안내",
-        "kind": "대중교통",
-        "region": "전국",
-        "address": "노선 및 운영기관별 확인",
+        "id": "city_bus",
+        "name": "시내버스",
+        "category": "버스",
+        "region": "지역별 확인",
         "pets": ["강아지", "고양이"],
         "sizes": ["소형"],
-        "indoor": "운영기관별 이동장 및 운송 규정 확인",
+        "condition": "운송사별 이동장 및 동반 규정 확인",
         "price": "노선 및 운임별 상이",
-        "description": "버스·철도 이용 전 반려동물 운송 규정을 확인하는 유형",
-        "tags": ["대중교통", "규정 확인", "이동"],
+        "description": "일상적인 이동을 위한 대중교통",
+        "image": "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?w=900",
+        "tags": ["대중교통", "일상 이동"],
+    },
+    {
+        "id": "intercity_bus",
+        "name": "고속·시외버스",
+        "category": "고속·시외버스",
+        "region": "전국",
+        "pets": ["강아지", "고양이"],
+        "sizes": ["소형"],
+        "condition": "운송사 및 노선별 동반 조건을 예매 전에 확인",
+        "price": "운송사 및 구간별 상이",
+        "description": "다른 도시로 이동하기 전 확인할 장거리 교통수단",
+        "image": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=900",
+        "tags": ["장거리", "대중교통"],
+    },
+    {
+        "id": "train",
+        "name": "기차",
+        "category": "기차",
+        "region": "전국",
+        "pets": ["강아지", "고양이"],
+        "sizes": ["소형"],
+        "condition": "열차 종류와 운영기관의 최신 운송 규정 확인",
+        "price": "노선 및 좌석별 상이",
+        "description": "장거리 이동을 위한 철도 교통수단",
         "image": "https://images.unsplash.com/photo-1474487548417-781cb71495f3?w=900",
-        "type": "이동수단",
+        "tags": ["철도", "장거리"],
+    },
+    {
+        "id": "pet_shuttle",
+        "name": "반려동물 전용 이동 서비스",
+        "category": "전용 이동 서비스",
+        "region": "업체별 확인",
+        "pets": ["강아지", "고양이"],
+        "sizes": ["소형", "중형", "대형"],
+        "condition": "서비스 지역, 예약 가능 시간 및 동반 조건 확인",
+        "price": "업체별 상이",
+        "description": "반려동물 이동을 위해 제공되는 전용 서비스 유형",
+        "image": "https://images.unsplash.com/photo-1551717743-49959800b1f6?w=900",
+        "tags": ["전용 서비스", "예약"],
     },
 ]
 
 REGIONS = ["전체", "서울", "경기", "인천", "강원", "충청", "전라", "경상", "제주", "전국"]
-KINDS = ["전체", "카페", "식당", "숙소", "공원", "캠핑", "택시", "렌터카", "대중교통"]
-PET_TYPES = ["전체", "강아지", "고양이"]
-PET_SIZES = ["전체", "소형", "중형", "대형"]
+CATEGORIES = [
+    "전체",
+    "택시",
+    "렌터카",
+    "버스",
+    "고속·시외버스",
+    "기차",
+    "전용 이동 서비스",
+]
+PETS = ["전체", "강아지", "고양이"]
+SIZES = ["전체", "소형", "중형", "대형"]
 
-# -----------------------------------------------
-# 2. 화면 디자인
-# -----------------------------------------------
+# -------------------------------
+# 스타일
+# -------------------------------
 st.markdown("""
 <style>
 .stApp {
@@ -150,15 +113,14 @@ st.markdown("""
     color: #26352A;
 }
 .block-container {
-    max-width: 1120px;
+    max-width: 1100px;
     padding-top: 1.8rem;
     padding-bottom: 3rem;
 }
 .brand {
-    font-size: 26px;
+    font-size: 27px;
     font-weight: 850;
     letter-spacing: -1px;
-    color: #26352A;
 }
 .brand span {
     color: #4C8058;
@@ -166,22 +128,22 @@ st.markdown("""
 .hero {
     background: #EAF1E7;
     border: 1px solid #DDE8D9;
-    border-radius: 22px;
+    border-radius: 20px;
     padding: 28px;
     margin: 18px 0 25px;
 }
 .eyebrow {
+    color: #52775A;
     font-size: 11px;
     font-weight: 800;
     letter-spacing: 2px;
-    color: #52775A;
 }
 .hero h1 {
-    font-size: clamp(28px, 4vw, 42px);
-    line-height: 1.25;
-    letter-spacing: -1.4px;
-    margin: 10px 0;
     color: #26352A;
+    font-size: clamp(28px, 4vw, 42px);
+    line-height: 1.3;
+    letter-spacing: -1px;
+    margin: 10px 0;
 }
 .hero p {
     color: #647267;
@@ -191,7 +153,6 @@ st.markdown("""
 .section-title {
     font-size: 21px;
     font-weight: 800;
-    letter-spacing: -0.5px;
     margin: 22px 0 5px;
 }
 .muted {
@@ -199,13 +160,12 @@ st.markdown("""
     font-size: 13px;
     line-height: 1.7;
 }
-.result-name {
+.card-name {
     font-size: 18px;
     font-weight: 800;
     margin-bottom: 4px;
-    color: #29392D;
 }
-.result-meta {
+.card-meta {
     font-size: 12px;
     color: #798479;
 }
@@ -221,15 +181,16 @@ st.markdown("""
 .info-label {
     color: #7B857C;
     font-size: 12px;
+    margin-top: 10px;
 }
 .info-value {
     color: #344C38;
     font-size: 13px;
-    font-weight: 650;
+    font-weight: 600;
     line-height: 1.7;
 }
 div[data-testid="stVerticalBlockBorderWrapper"] {
-    background: #FFFFFF;
+    background: white;
     border-color: #E4E9E1;
     border-radius: 15px;
 }
@@ -237,9 +198,6 @@ div.stButton > button {
     border-radius: 9px;
     min-height: 40px;
     font-weight: 650;
-}
-div[data-testid="stImage"] img {
-    border-radius: 10px;
 }
 .footer {
     border-top: 1px solid #E2E7DF;
@@ -252,27 +210,27 @@ div[data-testid="stImage"] img {
 </style>
 """, unsafe_allow_html=True)
 
-# -----------------------------------------------
-# 3. 상태 초기화
-# -----------------------------------------------
+# -------------------------------
+# 상태 초기화
+# -------------------------------
 if "favorites" not in st.session_state:
     st.session_state["favorites"] = []
 
 if "favorites_only" not in st.session_state:
     st.session_state["favorites_only"] = False
 
-# -----------------------------------------------
-# 4. 상단 브랜드 및 즐겨찾기
-# -----------------------------------------------
-head_left, head_right = st.columns([3, 1])
+# -------------------------------
+# 상단 메뉴
+# -------------------------------
+left, right = st.columns([3, 1])
 
-with head_left:
+with left:
     st.markdown(
         '<div class="brand">🐾 함께<span>가개</span></div>',
         unsafe_allow_html=True,
     )
 
-with head_right:
+with right:
     label = "전체 검색" if st.session_state["favorites_only"] else "♡ 저장 목록"
     if st.button(label, use_container_width=True):
         st.session_state["favorites_only"] = not st.session_state["favorites_only"]
@@ -280,60 +238,60 @@ with head_right:
 
 st.markdown("""
 <div class="hero">
-    <div class="eyebrow">PET-FRIENDLY PLACE & MOBILITY</div>
-    <h1>우리 함께,<br>어디든 가개.</h1>
-    <p>반려동물과 갈 장소부터 이동수단까지.<br>
-    필요한 조건을 선택하고 한눈에 비교해 보세요.</p>
+    <div class="eyebrow">PET-FRIENDLY MOBILITY</div>
+    <h1>반려동물과 함께,<br>어떤 방법으로 이동할까요?</h1>
+    <p>
+        택시부터 대중교통까지.<br>
+        반려동물과 함께 이용할 이동수단을 검색해 보세요.
+    </p>
 </div>
 """, unsafe_allow_html=True)
 
-# -----------------------------------------------
-# 5. 검색 및 필터
-# -----------------------------------------------
-st.markdown('<div class="section-title">어디로 떠나볼까요?</div>', unsafe_allow_html=True)
+# -------------------------------
+# 검색창
+# -------------------------------
+st.markdown('<div class="section-title">이동수단 검색</div>', unsafe_allow_html=True)
 st.markdown(
-    '<div class="muted">장소명, 지역, 종류 또는 특징을 검색할 수 있어요.</div>',
+    '<div class="muted">이동수단 이름이나 특징을 검색하고 조건을 선택하세요.</div>',
     unsafe_allow_html=True,
 )
 
 keyword = st.text_input(
     "검색어",
-    placeholder="예: 서울 카페, 택시, 캠핑",
+    placeholder="예: 택시, 기차, 장거리 이동",
     label_visibility="collapsed",
-    key="search_keyword",
+    key="mobility_search",
 )
 
-f1, f2, f3, f4 = st.columns(4)
+c1, c2, c3 = st.columns(3)
 
-with f1:
-    selected_region = st.selectbox("지역", REGIONS, key="filter_region")
-with f2:
-    selected_kind = st.selectbox("종류", KINDS, key="filter_kind")
-with f3:
-    selected_pet = st.selectbox("반려동물", PET_TYPES, key="filter_pet")
-with f4:
-    selected_size = st.selectbox("크기", PET_SIZES, key="filter_size")
+with c1:
+    region = st.selectbox("지역", REGIONS, key="mobility_region")
 
-type_filter = st.radio(
-    "검색 범위",
-    ["전체", "장소", "이동수단"],
-    horizontal=True,
-    key="filter_type",
+with c2:
+    category = st.selectbox("이동수단 종류", CATEGORIES, key="mobility_category")
+
+with c3:
+    pet = st.selectbox("반려동물 종류", PETS, key="mobility_pet")
+
+size = st.selectbox("반려동물 크기", SIZES, key="mobility_size")
+
+st.caption(
+    "아래 정보는 화면 확인용 예시입니다. 실제 운행 업체나 이용 가능 여부를 보장하지 않습니다."
 )
 
-# -----------------------------------------------
-# 6. 검색 결과 계산
-# -----------------------------------------------
+# -------------------------------
+# 필터링
+# -------------------------------
 results = []
 
-for item in ITEMS:
+for item in TRANSPORTS:
     searchable = " ".join([
         item["name"],
-        item["kind"],
+        item["category"],
         item["region"],
-        item["address"],
         item["description"],
-        item["indoor"],
+        item["condition"],
         item["price"],
         *item["tags"],
         *item["pets"],
@@ -343,20 +301,17 @@ for item in ITEMS:
     if keyword.strip() and keyword.strip().casefold() not in searchable:
         continue
 
-    if selected_region != "전체":
-        if item["region"] not in (selected_region, "전국"):
+    if category != "전체" and item["category"] != category:
+        continue
+
+    if region != "전체":
+        if item["region"] not in (region, "전국", "지역별 확인", "업체별 확인"):
             continue
 
-    if selected_kind != "전체" and item["kind"] != selected_kind:
+    if pet != "전체" and pet not in item["pets"]:
         continue
 
-    if selected_pet != "전체" and selected_pet not in item["pets"]:
-        continue
-
-    if selected_size != "전체" and selected_size not in item["sizes"]:
-        continue
-
-    if type_filter != "전체" and item["type"] != type_filter:
+    if size != "전체" and size not in item["sizes"]:
         continue
 
     if (
@@ -367,48 +322,38 @@ for item in ITEMS:
 
     results.append(item)
 
-# -----------------------------------------------
-# 7. 결과 카드
-# -----------------------------------------------
-if st.session_state["favorites_only"]:
-    st.markdown('<div class="section-title">저장한 목록</div>', unsafe_allow_html=True)
-else:
-    st.markdown('<div class="section-title">검색 결과</div>', unsafe_allow_html=True)
+# -------------------------------
+# 결과 카드
+# -------------------------------
+heading = "저장한 이동수단" if st.session_state["favorites_only"] else "검색 결과"
 
 st.markdown(
-    f'<div class="muted">{len(results)}개의 결과 · '
-    '카드를 눌러 이용 조건을 확인하세요.</div>',
+    f'<div class="section-title">{heading} · {len(results)}개</div>',
     unsafe_allow_html=True,
 )
 
 if not results:
-    st.info("검색 결과가 없어요. 검색어 또는 필터를 바꿔 보세요.")
+    st.info("검색 결과가 없습니다. 검색어 또는 필터를 바꿔 보세요.")
+
 else:
     for start in range(0, len(results), 2):
-        pair = results[start:start + 2]
+        batch = results[start:start + 2]
         cols = st.columns(2, gap="medium")
 
-        for col, item in zip(cols, pair):
+        for col, item in zip(cols, batch):
             with col:
                 with st.container(border=True):
                     try:
                         st.image(item["image"], use_container_width=True)
                     except Exception:
-                        st.markdown(
-                            f'<div style="background:#EDF3E9;padding:38px;'
-                            f'text-align:center;border-radius:10px;font-size:30px">'
-                            f'🐾</div>',
-                            unsafe_allow_html=True,
-                        )
+                        st.write("🐾 이미지가 표시되지 않습니다.")
 
                     st.markdown(
-                        f'<div class="result-name">{item["name"]}</div>',
+                        f'<div class="card-name">{item["name"]}</div>',
                         unsafe_allow_html=True,
                     )
                     st.markdown(
-                        f'<div class="result-meta">'
-                        f'{item["region"]} · {item["kind"]} · {item["type"]}'
-                        f'</div>',
+                        f'<div class="card-meta">{item["category"]} · {item["region"]}</div>',
                         unsafe_allow_html=True,
                     )
 
@@ -421,54 +366,57 @@ else:
                     st.markdown(tags, unsafe_allow_html=True)
 
                     st.markdown(
-                        f'<div style="margin-top:12px">'
-                        f'<div class="info-label">위치</div>'
-                        f'<div class="info-value">{item["address"]}</div>'
-                        f'<div class="info-label" style="margin-top:8px">'
-                        f'동반 가능 동물</div>'
-                        f'<div class="info-value">'
-                        f'{", ".join(item["pets"])} · '
-                        f'{", ".join(item["sizes"])}견</div>'
-                        f'<div class="info-label" style="margin-top:8px">'
-                        f'이용 조건</div>'
-                        f'<div class="info-value">{item["indoor"]}</div>'
-                        f'<div class="info-label" style="margin-top:8px">'
-                        f'비용 안내</div>'
-                        f'<div class="info-value">{item["price"]}</div>'
-                        f'</div>',
+                        f'<div class="info-label">동반 가능 동물</div>'
+                        f'<div class="info-value">{", ".join(item["pets"])}</div>'
+                        f'<div class="info-label">동반 크기</div>'
+                        f'<div class="info-value">{", ".join(item["sizes"])}</div>'
+                        f'<div class="info-label">이용 조건</div>'
+                        f'<div class="info-value">{item["condition"]}</div>'
+                        f'<div class="info-label">비용 안내</div>'
+                        f'<div class="info-value">{item["price"]}</div>',
                         unsafe_allow_html=True,
                     )
 
-                    with st.expander("상세 정보 및 확인 사항"):
-                        st.write(item["description"])
-                        st.write("**이용 전 확인:** 반려동물 동반 가능 여부, 크기 제한, 이동장·목줄 규정, 추가 비용을 운영자에게 확인하세요.")
+                    with st.expander("이용 전 확인 사항"):
+                        st.write(
+                            "운영기관이나 업체의 최신 규정을 확인하세요. "
+                            "반려동물 크기 제한, 이동장 사용, 추가 비용, 예약 필요 여부를 "
+                            "이용 전에 직접 확인하는 것이 좋습니다."
+                        )
 
                     map_url = (
                         "https://map.naver.com/p/search/"
-                        + quote(item["address"] + " " + item["name"])
+                        + quote(item["name"] + " " + item["region"])
                     )
-                    st.link_button("네이버 지도에서 검색 ↗", map_url, use_container_width=True)
+                    st.link_button(
+                        "네이버 지도에서 검색 ↗",
+                        map_url,
+                        use_container_width=True,
+                    )
 
-                    is_saved = item["id"] in st.session_state["favorites"]
-                    save_text = "♥ 저장 취소" if is_saved else "♡ 즐겨찾기 저장"
+                    saved = item["id"] in st.session_state["favorites"]
+                    save_label = "♥ 저장 취소" if saved else "♡ 즐겨찾기 저장"
 
-                    if st.button(save_text, key=f"save_{item['id']}", use_container_width=True):
-                        if is_saved:
+                    if st.button(
+                        save_label,
+                        key=f"favorite_{item['id']}",
+                        use_container_width=True,
+                    ):
+                        if saved:
                             st.session_state["favorites"].remove(item["id"])
                         else:
                             st.session_state["favorites"].append(item["id"])
                         st.rerun()
 
-# -----------------------------------------------
-# 8. 안내
-# -----------------------------------------------
+# -------------------------------
+# 하단 안내
+# -------------------------------
 st.markdown("""
 <div class="footer">
-    <b>함께가개 · 반려동물 동반 검색</b><br>
-    현재 버전은 배포 및 화면 확인용 예시 데이터로 구성되어 있습니다.
-    표시된 장소명과 위치는 실제 업체 정보가 아닐 수 있으며,
-    사진은 디자인 미리보기용 이미지입니다.<br>
-    실제 방문 전에는 업체의 최신 동반 규정, 운영 시간, 요금 및 위치를 직접 확인하세요.
-    즐겨찾기는 로그인 없는 현재 세션에서만 유지됩니다.
+    <b>함께가개 · 반려동물 이동수단 검색</b><br>
+    이 앱은 이동수단 검색 화면을 확인하기 위한 예시 버전입니다.
+    업체명과 정보는 실제 서비스 제공 업체를 의미하지 않습니다.
+    사진은 미리보기용이며 실제 차량이나 서비스 사진이 아닐 수 있습니다.<br>
+    즐겨찾기는 현재 세션에서만 유지됩니다.
 </div>
 """, unsafe_allow_html=True)
