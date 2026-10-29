@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import urllib.parse
 import requests
+from bs4 import BeautifulSoup
 
 # 1. 페이지 기본 설정
 st.set_page_config(
@@ -11,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 2. 디자인 CSS (사진 시안 100% 동일 구현)
+# 2. 커스텀 CSS (사진 시안 디자인 100% 반영)
 st.markdown("""
     <style>
     .stApp {
@@ -20,7 +21,7 @@ st.markdown("""
     }
     
     .block-container {
-        padding-top: 2rem;
+        padding-top: 1.5rem;
         padding-bottom: 3rem;
         max-width: 1200px;
     }
@@ -48,65 +49,60 @@ st.markdown("""
         box-shadow: 0 10px 25px rgba(0, 0, 0, 0.09);
         border: 4px solid #ffffff;
         background-color: #e5e7eb;
-        margin-top: 14px;
+        margin-top: 10px;
     }
 
-    /* 좌우 캐릭터 라인 */
+    /* 캐릭터 영역 */
     .character-box {
         display: flex;
         flex-direction: column;
         justify-content: space-between;
         align-items: center;
-        height: 480px;
+        height: 460px;
         padding: 10px 0;
     }
 
-    /* 실시간 구글 검색 결과 카드 */
-    .google-card {
+    /* 구글 지도 검색 결과 카드 스타일 */
+    .place-card {
         background: #ffffff;
-        border-radius: 18px;
-        padding: 18px;
-        box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+        border-radius: 20px;
+        padding: 20px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.05);
         border: 1px solid #ede8df;
-        margin-bottom: 16px;
+        margin-bottom: 20px;
+        min-height: 220px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
     }
-    .google-title {
-        font-size: 1.1rem;
+    .place-title {
+        font-size: 1.2rem;
         font-weight: 700;
-        color: #1d4ed8;
-        text-decoration: none;
+        color: #1e293b;
         margin-bottom: 6px;
-        display: block;
     }
-    .google-snippet {
-        font-size: 0.9rem;
-        color: #4b5563;
+    .place-snippet {
+        font-size: 0.92rem;
+        color: #475569;
         line-height: 1.5;
+        margin-bottom: 12px;
     }
-    .google-link {
-        font-size: 0.8rem;
-        color: #059669;
-        margin-top: 6px;
-        word-break: break-all;
-    }
-    
-    .badge {
+    .badge-tag {
         display: inline-block;
         background-color: #f3efe6;
-        color: #7c3aed;
-        padding: 4px 9px;
-        border-radius: 10px;
-        font-size: 0.78rem;
+        color: #d97706;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 0.8rem;
         font-weight: 600;
-        margin-right: 4px;
-        margin-bottom: 4px;
+        margin-right: 6px;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# 3. 고화질 SVG 캐릭터 일러스트
+# 3. 고화질 SVG 일러스트
 ICON_PAW = """
-<svg width="105" height="105" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
   <ellipse cx="22" cy="38" rx="10" ry="14" fill="#a47560" stroke="#4a2e2b" stroke-width="3"/>
   <ellipse cx="42" cy="22" rx="10" ry="14" fill="#a47560" stroke="#4a2e2b" stroke-width="3"/>
   <ellipse cx="68" cy="24" rx="10" ry="14" fill="#a47560" stroke="#4a2e2b" stroke-width="3"/>
@@ -116,7 +112,7 @@ ICON_PAW = """
 """
 
 ICON_DOG = """
-<svg width="115" height="115" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="110" height="110" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
   <ellipse cx="28" cy="62" rx="16" ry="24" fill="#a46d50" stroke="#3d2314" stroke-width="3.5" transform="rotate(-15 28 62)"/>
   <ellipse cx="92" cy="62" rx="16" ry="24" fill="#a46d50" stroke="#3d2314" stroke-width="3.5" transform="rotate(15 92 62)"/>
   <ellipse cx="60" cy="70" rx="42" ry="36" fill="#faebd7" stroke="#3d2314" stroke-width="3.5"/>
@@ -130,7 +126,7 @@ ICON_DOG = """
 """
 
 ICON_RABBIT = """
-<svg width="115" height="115" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="110" height="110" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
   <ellipse cx="44" cy="36" rx="11" ry="28" fill="#fdf2e9" stroke="#452c1e" stroke-width="3.5" transform="rotate(-8 44 36)"/>
   <ellipse cx="44" cy="36" rx="6" ry="20" fill="#fbcfe8" transform="rotate(-8 44 36)"/>
   <ellipse cx="76" cy="36" rx="11" ry="28" fill="#fdf2e9" stroke="#452c1e" stroke-width="3.5" transform="rotate(8 76 36)"/>
@@ -150,7 +146,7 @@ ICON_RABBIT = """
 """
 
 ICON_HAMSTER = """
-<svg width="115" height="115" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="110" height="110" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
   <circle cx="36" cy="46" r="16" fill="#88929e" stroke="#2b333e" stroke-width="3.5"/>
   <circle cx="36" cy="46" r="9" fill="#d1d5db"/>
   <circle cx="84" cy="46" r="16" fill="#88929e" stroke="#2b333e" stroke-width="3.5"/>
@@ -164,111 +160,4 @@ ICON_HAMSTER = """
   <line x1="26" y1="75" x2="37" y2="75" stroke="#2b333e" stroke-width="2"/>
   <line x1="27" y1="81" x2="38" y2="79" stroke="#2b333e" stroke-width="2"/>
   <line x1="83" y1="75" x2="94" y2="75" stroke="#2b333e" stroke-width="2"/>
-  <line x1="82" y1="79" x2="93" y2="81" stroke="#2b333e" stroke-width="2"/>
-</svg>
-"""
-
-# 4. 실시간 구글 검색 엔진 함수 (앱 화면 내부 파싱)
-@st.cache_data(ttl=1800)
-def search_google_live(query_text):
-    """
-    실제 구글 웹 검색을 화면 내부로 가지고 와서 파싱하는 함수
-    API 키 없이도 동작 가능한 모듈
-    """
-    search_term = query_text if query_text else "불당동 반려동물 동반 숙소"
-    if not any(k in search_term for k in ["숙소", "호텔", "펜션", "동반"]):
-        search_term += " 반려동물 동반 숙소"
-        
-    encoded_query = urllib.parse.quote(search_term)
-    url = f"https://html.duckduckgo.com/html/?q={encoded_query}"
-    
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    }
-    
-    results = []
-    try:
-        res = requests.get(url, headers=headers, timeout=5)
-        if res.status_code == 200:
-            from bs4 import BeautifulSoup
-            soup = BeautifulSoup(res.text, "html.parser")
-            
-            for item in soup.find_all("div", class_="result")[:8]:
-                title_elem = item.find("a", class_="result__url")
-                snippet_elem = item.find("a", class_="result__snippet")
-                
-                if title_elem and snippet_elem:
-                    title = title_elem.text.strip()
-                    link = title_elem.get("href", "")
-                    snippet = snippet_elem.text.strip()
-                    
-                    results.append({
-                        "title": title,
-                        "link": link,
-                        "snippet": snippet
-                    })
-    except Exception:
-        pass
-    
-    return search_term, results
-
-# 5. 메인 레이아웃 (사진 디자인 구도)
-col_left, col_center, col_right = st.columns([1.2, 5.5, 1.2])
-
-with col_left:
-    st.markdown(f"""
-        <div class="character-box">
-            <div>{ICON_PAW}</div>
-            <div>{ICON_DOG}</div>
-        </div>
-    """, unsafe_allow_html=True)
-
-with col_center:
-    search_input = st.text_input(
-        label="search",
-        placeholder="🔍 반려동물 크기, 위치, 숙소 형태 등을 입력해 주세요",
-        label_visibility="collapsed"
-    )
-    
-    search_keyword, live_results = search_google_live(search_input.strip())
-    
-    # 구글 실시간 지도를 화면 중앙에 즉시 렌더링
-    encoded_loc = urllib.parse.quote(search_keyword)
-    google_map_embed_url = f"https://maps.google.com/maps?q={encoded_loc}&t=&z=14&ie=UTF8&iwloc=&output=embed"
-    
-    st.markdown(f"""
-        <div class="map-frame-wrapper">
-            <iframe width="100%" height="450" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="{google_map_embed_url}"></iframe>
-        </div>
-    """, unsafe_allow_html=True)
-
-with col_right:
-    st.markdown(f"""
-        <div class="character-box">
-            <div>{ICON_RABBIT}</div>
-            <div>{ICON_HAMSTER}</div>
-        </div>
-    """, unsafe_allow_html=True)
-
-st.markdown("<br>", unsafe_allow_html=True)
-
-# 6. 화면 내 실시간 웹/구글 검색 결과 카드 영역
-st.subheader(f"🌐 화면 내 실시간 구글 검색 결과: '{search_keyword}'")
-
-if live_results:
-    res_cols = st.columns(2)
-    for idx, item in enumerate(live_results):
-        with res_cols[idx % 2]:
-            st.markdown(f"""
-                <div class="google-card">
-                    <a href="{item['link']}" target="_blank" class="google-title">🏠 {item['title']}</a>
-                    <div class="google-snippet">{item['snippet']}</div>
-                    <div class="google-link">🔗 {item['link']}</div>
-                </div>
-            """, unsafe_allow_html=True)
-            st.link_button(f"👉 웹사이트 바로가기", item['link'], use_container_width=True)
-else:
-    # 파싱 대안용 구글 검색 뷰어 컴포넌트
-    st.info("실시간 검색 결과를 화면 내로 불러오고 있습니다. 상단 지도를 통해 구글 지도 검색 결과도 함께 확인해 보세요.")
-    google_search_iframe = f"https://www.google.com/search?igu=1&q={urllib.parse.quote(search_keyword)}"
-    st.components.v1.iframe(google_search_iframe, height=500, scrolling=True)
+  <line x1="8
