@@ -2,8 +2,9 @@ import streamlit as st
 import pandas as pd
 import urllib.parse
 import os
+import google.generativeai as genai
 
-# 1. 페이지 기본 설정 (시안 디자인 반영)
+# 1. 페이지 기본 설정
 st.set_page_config(
     page_title="PetStay - 반려동물 동반 숙소 검색",
     page_icon="🐾",
@@ -11,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 2. 사진 시안 스타일 커스텀 CSS (크림 톤, 캡슐 검색바, 라운드 지도)
+# 2. 사진 시안 스타일 100% 반영 커스텀 CSS
 st.markdown("""
     <style>
     .stApp {
@@ -25,7 +26,7 @@ st.markdown("""
         max-width: 1200px;
     }
 
-    /* 시안 속 캡슐형 검색창 */
+    /* 캡슐형 검색창 */
     div[data-testid="stTextInput"] > div > div {
         background-color: #ffffff !important;
         border: 2.5px solid #6b7280 !important;
@@ -41,7 +42,7 @@ st.markdown("""
         font-weight: 500;
     }
 
-    /* 시안 속 둥근 지도 테두리 */
+    /* 둥근 구글 지도 테두리 */
     .map-frame-wrapper {
         border-radius: 28px;
         overflow: hidden;
@@ -51,7 +52,7 @@ st.markdown("""
         margin-top: 10px;
     }
 
-    /* 캐릭터 구도 정렬 */
+    /* 캐릭터 영역 */
     .character-box {
         display: flex;
         flex-direction: column;
@@ -90,7 +91,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 3. 고화질 SVG 캐릭터 일러스트 (발자국, 강아지, 토끼, 친칠라)
+# 3. 고화질 SVG 캐릭터 일러스트
 ICON_PAW = """
 <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
   <ellipse cx="22" cy="38" rx="10" ry="14" fill="#a47560" stroke="#4a2e2b" stroke-width="3"/>
@@ -154,14 +155,9 @@ ICON_HAMSTER = """
 </svg>
 """
 
-# 4. Gemini API 연동 및 예외 처리 함수
-def query_gemini_ai(user_prompt):
-    """
-    GEMINI_API_KEY Secret을 사용하여 gemini-2.5-flash-lite 모델 호출
-    """
+# 4. Gemini API 호출 함수 (안정적인 SDK 사용)
+def ask_gemini(search_query):
     api_key = None
-    
-    # Streamlit Secrets 또는 환경 변수에서 GEMINI_API_KEY 가져오기
     if "GEMINI_API_KEY" in st.secrets:
         api_key = st.secrets["GEMINI_API_KEY"]
     else:
@@ -170,47 +166,37 @@ def query_gemini_ai(user_prompt):
     if not api_key:
         return {
             "status": "error",
-            "message": "GEMINI_API_KEY가 설정되지 않았습니다. Streamlit Secrets에 GEMINI_API_KEY를 추가해 주세요."
+            "message": "Streamlit Secrets에 GEMINI_API_KEY 설정이 안 되어 있습니다."
         }
 
     try:
-        from google import genai
-        client = genai.Client(api_key=api_key)
+        genai.configure(api_key=api_key)
+        # gemini-2.5-flash-lite 모델 호출
+        model = genai.GenerativeModel("gemini-2.5-flash-lite")
         
-        system_instruction = (
-            "너는 반려동물 동반 숙소 검색 AI다. "
-            "사용자가 입력한 검색어에서 위치/지역, 반려동물 조건, 숙소 유형을 분석하여 "
-            "실제 지도 검색에 사용할 장소명과 한국 내 추천 숙소 정보 3~4개를 "
-            "구체적인 설명과 함께 친절하게 안내해라."
-        )
-
-        response = client.models.generate_content(
-            model='gemini-2.5-flash-lite',
-            contents=f"검색어: '{user_prompt}'\n\n위 검색어에 부합하는 반려동물 동반 숙소를 분석하고 추천해줘.",
-            config={'system_instruction': system_instruction}
+        prompt = (
+            "너는 반려동물 동반 숙소 전문 AI다. "
+            "사용자가 입력한 다음 키워드를 기반으로 지역, 반려동물 제한, 숙소 특징을 파악해서 "
+            "해당 조건에 딱 맞는 추천 숙소 3곳과 특징을 정갈하게 정리해줘.\n\n"
+            f"검색어: {search_query}"
         )
         
+        response = model.generate_content(prompt)
         return {
             "status": "success",
             "text": response.text
         }
-
     except Exception as e:
         return {
             "status": "error",
-            "message": f"Gemini API 호출 중 오류가 발생했습니다: {str(e)}"
+            "message": f"API 호출 오류 발생: {str(e)}"
         }
 
-# 5. 메인 화면 레이아웃 (시안 사진 100% 반영)
+# 5. 메인 레이아웃
 col_left, col_center, col_right = st.columns([1.2, 5.5, 1.2])
 
 with col_left:
-    st.markdown(f"""
-        <div class="character-box">
-            <div>{ICON_PAW}</div>
-            <div>{ICON_DOG}</div>
-        </div>
-    """, unsafe_allow_html=True)
+    st.markdown(f'<div class="character-box"><div>{ICON_PAW}</div><div>{ICON_DOG}</div></div>', unsafe_allow_html=True)
 
 with col_center:
     search_input = st.text_input(
@@ -221,30 +207,14 @@ with col_center:
     
     query_text = search_input.strip() if search_input.strip() else "불당동"
     
-    # 실제 구글 지도 연동
-    encoded_map_q = urllib.parse.quote(f"{query_text} 반려동물 동반 숙소")
-    google_map_embed_url = f"https://maps.google.com/maps?q={encoded_map_q}&t=&z=14&ie=UTF8&iwloc=&output=embed"
+    # 구글 지도 생성
+    encoded_q = urllib.parse.quote(query_text + " 반려동물 동반 숙소")
+    map_url = "https://maps.google.com/maps?q=" + encoded_q + "&t=&z=14&ie=UTF8&iwloc=&output=embed"
     
-    st.markdown(f"""
-        <div class="map-frame-wrapper">
-            <iframe width="100%" height="450" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="{google_map_embed_url}"></iframe>
-        </div>
-    """, unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="map-frame-wrapper"><iframe width="100%" height="450" frameborder="0" scrolling="no" src="{map_url}"></iframe></div>',
+        unsafe_allow_html=True
+    )
 
 with col_right:
-    st.markdown(f"""
-        <div class="character-box">
-            <div>{ICON_RABBIT}</div>
-            <div>{ICON_HAMSTER}</div>
-        </div>
-    """, unsafe_allow_html=True)
-
-st.markdown("<br>", unsafe_allow_html=True)
-
-# 6. Gemini 2.5 Flash Lite 분석 결과 영역
-st.subheader(f"✨ Gemini AI 분석 맞춤 추천: '{query_text}'")
-
-with st.spinner("Gemini API가 조건을 분석하여 검색 결과를 생성하는 중입니다..."):
-    ai_result = query_gemini_ai(query_text)
-
-if ai
+    st.markdown(f'<div class="character-box"><div>{ICON_RABBIT}</div><div>{ICON_HAMSTER
