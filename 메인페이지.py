@@ -5,7 +5,7 @@ import pandas as pd
 # 1. 페이지 기본 설정 및 세션 데이터 초기화
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="멍트래블 - 반려견 동반 여행 정보",
+    page_title="함께 가개 - 반려견 동반 여행 정보",
     page_icon="🐾",
     layout="wide"
 )
@@ -64,15 +64,15 @@ if "places" not in st.session_state:
     ]
 
 # -----------------------------------------------------------------------------
-# 2. 메인 헤더 및 검색창 영역
+# 2. 메인 타이틀 및 안내 영역
 # -----------------------------------------------------------------------------
-st.title("🐾 멍트래블 (Puppy Travel Hub)")
+st.title("🐾 함께 가개 (Puppy Travel Hub)")
 
 # 안내 배너
-st.info("🐶 **안녕하세요! 반려견과 행복한 여행을 시작해개!** \n\n우리 댕댕이가 좋아하는 오프리쉬 놀이터부터 편안한 펜션, 펫택시까지 한눈에 확인해보세요!")
+st.info("🐶 **안녕하세요! 반려견과 함께하는 행복한 여행, '함께 가개'입니다!** \n\n우리 댕댕이가 좋아하는 오프리쉬 놀이터부터 편안한 펜션, 펫택시까지 한눈에 확인해 보세요!")
 
 # 통합 검색창
-search_keyword = st.text_input("🔎 검색어 입력", placeholder="강아지와 가고 싶은 곳의 이름이나 지역을 입력해보세요 (예: 펜션, 강릉, 바다)").strip()
+search_keyword = st.text_input("🔎 장소 검색", placeholder="강아지와 가고 싶은 곳의 이름이나 지역을 입력해보세요 (예: 펜션, 강릉, 카페)").strip()
 
 st.write("---")
 
@@ -88,10 +88,15 @@ tab_all, tab_cafe, tab_stay, tab_tour, tab_trans, tab_register = st.tabs([
     "📝 [사장님] 업체 등록"
 ])
 
-# 공통 장소 표시 함수 (오류 없이 반복 출력을 위해 정의)
+# -----------------------------------------------------------------------------
+# 4. 장소 표시 전용 함수 (중복 Key 오류 원천 해결)
+# -----------------------------------------------------------------------------
 def display_places(category_filter=None):
     places = st.session_state.places
     
+    # 탭 구분을 위한 고유 접두사 설정
+    tab_prefix = category_filter if category_filter else "all"
+
     # 1. 카테고리 필터링
     if category_filter:
         places = [p for p in places if p["category"] == category_filter]
@@ -108,9 +113,9 @@ def display_places(category_filter=None):
     # 조건 검색 필터 (대형견/오프리쉬)
     col_f1, col_f2 = st.columns(2)
     with col_f1:
-        filter_large = st.checkbox("🐕 대형견 동반 가능만 보기", key=f"chk_large_{category_filter}")
+        filter_large = st.checkbox("🐕 대형견 동반 가능만 보기", key=f"chk_large_{tab_prefix}")
     with col_f2:
-        filter_off = st.checkbox("🦮 오프리쉬 구역 있음만 보기", key=f"chk_off_{category_filter}")
+        filter_off = st.checkbox("🦮 오프리쉬 구역 있음만 보기", key=f"chk_off_{tab_prefix}")
 
     if filter_large:
         places = [p for p in places if p["large_dog"]]
@@ -121,7 +126,7 @@ def display_places(category_filter=None):
     st.write("")
 
     if not places:
-        st.warning("조건에 맞는 장소가 없습니다. 다른 검색어나 필터를 선택해보세요!")
+        st.warning("조건에 맞는 장소가 없습니다. 다른 검색어나 필터를 선택해 보세요!")
     else:
         for place in places:
             with st.container():
@@ -142,7 +147,7 @@ def display_places(category_filter=None):
                     
                     st.write(place["description"])
 
-                    # 리뷰 보이기/작성
+                    # 리뷰 보이기/작성 (탭 이름과 장소 ID를 결합하여 완벽하게 고유한 Key 적용)
                     with st.expander("💬 사용자 리뷰 보기 및 작성"):
                         if place["reviews"]:
                             for r in place["reviews"]:
@@ -150,8 +155,12 @@ def display_places(category_filter=None):
                         else:
                             st.write("아직 등록된 리뷰가 없습니다. 첫 리뷰를 작성해보세요!")
                             
-                        new_rev = st.text_input("리뷰 작성", key=f"input_rev_{place['id']}")
-                        if st.button("리뷰 등록", key=f"btn_rev_{place['id']}"):
+                        # 입력창 및 버튼 key 고유화
+                        input_key = f"input_{tab_prefix}_{place['id']}"
+                        btn_key = f"btn_{tab_prefix}_{place['id']}"
+                        
+                        new_rev = st.text_input("리뷰 작성", key=input_key)
+                        if st.button("리뷰 등록", key=btn_key):
                             if new_rev.strip():
                                 place["reviews"].append(new_rev.strip())
                                 st.success("리뷰가 등록되었습니다!")
@@ -161,7 +170,7 @@ def display_places(category_filter=None):
             st.markdown("---")
 
 # -----------------------------------------------------------------------------
-# 4. 각 탭별 화면 출력
+# 5. 각 탭별 화면 출력
 # -----------------------------------------------------------------------------
 with tab_all:
     st.header("🏠 전체 등록 장소")
@@ -184,13 +193,13 @@ with tab_trans:
     display_places(category_filter="이동수단")
 
 # -----------------------------------------------------------------------------
-# 5. [사장님] 업체 등록 탭
+# 6. [사장님] 업체 등록 탭
 # -----------------------------------------------------------------------------
 with tab_register:
     st.header("📝 사장님 전용 업체/이동수단 등록")
-    st.success("사장님이 직접 등록하신 장소는 [전체 보기] 및 해당 카테고리 탭에 즉시 반영됩니다!")
+    st.success("사장님이 직접 등록하신 장소는 '함께 가개' 전체 보기 및 카테고리 탭에 즉시 반영됩니다!")
 
-    with st.form("register_form_clean", clear_on_submit=True):
+    with st.form("register_form_final", clear_on_submit=True):
         reg_name = st.text_input("업체/서비스명*", placeholder="예: 멍멍 펜션, 댕댕 파크")
         
         c1, c2 = st.columns(2)
@@ -222,9 +231,4 @@ with tab_register:
                     "address": reg_address.strip(),
                     "large_dog": reg_large,
                     "off_leash": reg_off,
-                    "description": reg_desc.strip() if reg_desc else "상세 설명이 없습니다.",
-                    "image": reg_img.strip() if reg_img.strip() else "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=600",
-                    "reviews": []
-                }
-                st.session_state.places.append(new_item)
-                st.success(f"🎉 '{reg_name}' 등록이 완료되었습니다! 상단 탭에서 확인해 보세요.")
+                    "description": reg_desc.strip() if reg
