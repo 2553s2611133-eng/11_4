@@ -121,7 +121,7 @@ search_query = st.text_input("🔎 실시간 검색", placeholder="장소명, �
 # 웰컴 배너
 st.markdown("""
     <div class="welcome-banner">
-        <h2>🐶 반려견과 행복한 여행을 시작해개! 🐾</h2>
+        <h2>🐶 반려견과 행복한 여행을 시작하개! 🐾</h2>
         <p>우리 댕댕이가 좋아하는 오프리쉬 놀이터부터 편안한 한옥 숙소, 펫택시까지 한눈에 확인해 보세요!</p>
     </div>
 """, unsafe_allow_html=True)
