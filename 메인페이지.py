@@ -231,4 +231,9 @@ with tab_register:
                     "address": reg_address.strip(),
                     "large_dog": reg_large,
                     "off_leash": reg_off,
-                    "description": reg_desc.strip() if reg
+                    "description": reg_desc.strip() if reg_desc else "상세 설명이 없습니다.",
+                    "image": reg_img.strip() if reg_img.strip() else "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=600",
+                    "reviews": []
+                }
+                st.session_state.places.append(new_item)
+                st.success(f"🎉 '{reg_name}' 등록이 완료되었습니다! 상단 탭에서 확인해 보세요.")
